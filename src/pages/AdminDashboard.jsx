@@ -36,10 +36,34 @@ const AdminDashboard = () => {
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       body: JSON.stringify(formData)
     });
+    
     if (res.ok) {
-      alert("Volunteer Registered Successfully!");
+      // 1. የ schemas.py ምላሽን (Response) በቀጥታ መጠቀም
+      const data = await res.json();
+      alert(`${data.message}\n\nName: ${data.full_name}\nID: ${data.volunteer_id}\nTeam: ${data.team}`);
+      
       setFormData({ full_name: '', phone_number: '', team: 'General' });
-      fetchData();
+      fetchData(); // ዳታውን ዳግም ሎድ ለማድረግ
+    } else {
+      alert("Registration failed! Please try again.");
+    }
+  };
+
+  // 2. የጠፋውን የ Export CSV ፋንክሽን መመለስ
+  const handleExport = async () => {
+    const token = localStorage.getItem('admin_token');
+    const res = await fetch("https://er-attendance-backend.onrender.com/api/admin/export-csv", { 
+      headers: { "Authorization": `Bearer ${token}` } 
+    });
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a'); 
+      a.href = url; 
+      a.download = "attendance_report.csv"; 
+      a.click();
+    } else {
+      alert("Failed to export CSV. Please check the backend connection.");
     }
   };
 
@@ -48,7 +72,16 @@ const AdminDashboard = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-lg shadow-sm border border-gray-100">
         <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
-        <button onClick={() => { localStorage.removeItem('admin_token'); window.location.href = '/login'; }} className="bg-red-50 text-red-600 px-4 py-2 rounded-lg font-semibold hover:bg-red-100 transition">Logout</button>
+        
+        {/* Export CSV Button - አሁን ከ Header ጋር አብሮ ገብቷል */}
+        <div className="flex gap-4">
+          <button onClick={handleExport} className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition">
+            Export CSV
+          </button>
+          <button onClick={() => { localStorage.removeItem('admin_token'); window.location.href = '/login'; }} className="bg-red-50 text-red-600 px-4 py-2 rounded-lg font-semibold hover:bg-red-100 transition">
+            Logout
+          </button>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -68,14 +101,39 @@ const AdminDashboard = () => {
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
         {/* Register Form */}
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
           <h3 className="font-bold text-lg mb-4">Add New Volunteer</h3>
           <form onSubmit={handleRegister} className="space-y-4">
-            <input className="w-full p-3 border border-gray-200 rounded-lg" placeholder="Full Name" value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} required />
-            <input className="w-full p-3 border border-gray-200 rounded-lg" placeholder="Phone Number" value={formData.phone_number} onChange={e => setFormData({...formData, phone_number: e.target.value})} />
-            <button type="submit" className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition">Register</button>
+            <input 
+              className="w-full p-3 border border-gray-200 rounded-lg" 
+              placeholder="Full Name" 
+              value={formData.full_name} 
+              onChange={e => setFormData({...formData, full_name: e.target.value})} 
+              required 
+            />
+            <input 
+              className="w-full p-3 border border-gray-200 rounded-lg" 
+              placeholder="Phone Number" 
+              value={formData.phone_number} 
+              onChange={e => setFormData({...formData, phone_number: e.target.value})} 
+            />
+            
+            {/* Team Input Field - አሁን እንደ Input field ተቀይሯል */}
+            <input 
+            className="w-full p-3 border border-gray-200 rounded-lg" 
+            placeholder="Team (e.g. Media, Logistics)" 
+            value={formData.team} 
+            onChange={e => setFormData({...formData, team: e.target.value})} 
+            required 
+            />
+
+            <button type="submit" className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition">
+              Register
+            </button>
           </form>
+          
           <div className="mt-8 flex flex-col items-center">
             <p className="text-sm text-gray-500 mb-2">Check-In QR Code</p>
             <QRCodeSVG value="https://er-attendance-frontend.onrender.com/" size={140} />
