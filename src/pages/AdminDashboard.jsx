@@ -20,82 +20,74 @@ const AdminDashboard = () => {
       ]);
       if (vRes.ok) setVolunteers(await vRes.json());
       if (aRes.ok) setStats(await aRes.json());
-    } catch (err) { console.error("Error fetching data:", err); }
+    } catch (err) { console.error("Error:", err); }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('admin_token');
+    const res = await fetch("https://er-attendance-backend.onrender.com/api/volunteers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify(formData)
+    });
+    if (res.ok) { alert("Registered!"); setFormData({ full_name: '', phone_number: '', team: 'General' }); fetchData(); }
   };
 
   const handleExport = async () => {
     const token = localStorage.getItem('admin_token');
-    const res = await fetch("https://er-attendance-backend.onrender.com/api/admin/export-csv", { 
-      headers: { "Authorization": `Bearer ${token}` } 
-    });
+    const res = await fetch("https://er-attendance-backend.onrender.com/api/admin/export-csv", { headers: { "Authorization": `Bearer ${token}` } });
     if (res.ok) {
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = "volunteer_attendance_report.csv"; a.click();
-    } else { alert("Failed to export CSV."); }
+      const a = document.createElement('a'); a.href = url; a.download = "attendance_report.csv"; a.click();
+    }
   };
 
-  const handleLogout = () => { localStorage.removeItem('admin_token'); window.location.href = '/login'; };
-
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
-      {/* Header */}
+    <div className="p-8 bg-gray-100 min-h-screen">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
-        <button onClick={handleLogout} className="bg-red-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-600">Logout</button>
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <button onClick={() => { localStorage.removeItem('admin_token'); window.location.href = '/login'; }} className="bg-red-500 text-white px-6 py-2 rounded">Logout</button>
       </div>
 
-      {/* Analytics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-xl shadow border">
-          <p className="text-gray-500">Total Volunteers</p>
-          <h2 className="text-2xl font-bold">{volunteers.length}</h2>
-        </div>
-        <div className="bg-white p-6 rounded-xl shadow border">
-          <p className="text-gray-500">Present Today</p>
-          <h2 className="text-2xl font-bold text-blue-600">{stats.present_today}</h2>
-        </div>
-        <div className="bg-white p-6 rounded-xl shadow border">
-          <p className="text-gray-500">Qualified (7 Weeks)</p>
-          <h2 className="text-2xl font-bold text-green-600">{stats.qualified}</h2>
-        </div>
-        <button onClick={handleExport} className="bg-green-700 text-white rounded-xl font-bold hover:bg-green-800 transition">
-          Export Full Report (CSV)
-        </button>
+        <div className="bg-white p-6 rounded shadow"> <p>Total Volunteers</p> <h2 className="text-2xl font-bold">{volunteers.length}</h2> </div>
+        <div className="bg-white p-6 rounded shadow"> <p>Present Today</p> <h2 className="text-2xl font-bold text-blue-600">{stats.present_today}</h2> </div>
+        <div className="bg-white p-6 rounded shadow"> <p>Qualified (7 Weeks)</p> <h2 className="text-2xl font-bold text-green-600">{stats.qualified}</h2> </div>
+        <button onClick={handleExport} className="bg-green-700 text-white rounded font-bold">Export CSV Report</button>
       </div>
 
-      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Volunteer List Table */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow border">
-          <h3 className="font-bold mb-4">Registered Volunteers List</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b">
-                  <th className="py-2">Name</th>
-                  <th className="py-2">Phone</th>
-                  <th className="py-2">Team</th>
-                </tr>
-              </thead>
-              <tbody>
-                {volunteers.map(v => (
-                  <tr key={v.id} className="border-b hover:bg-gray-50">
-                    <td className="py-3">{v.full_name}</td>
-                    <td className="py-3">{v.phone_number || 'N/A'}</td>
-                    <td className="py-3">{v.team}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Registration Form */}
+        <div className="bg-white p-6 rounded shadow">
+          <h3 className="font-bold mb-4">Add New Volunteer</h3>
+          <form onSubmit={handleRegister} className="space-y-4">
+            <input className="w-full p-2 border rounded" placeholder="Full Name" value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} required />
+            <input className="w-full p-2 border rounded" placeholder="Phone" value={formData.phone_number} onChange={e => setFormData({...formData, phone_number: e.target.value})} />
+            <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded">Register Volunteer</button>
+          </form>
+          <div className="mt-8 flex flex-col items-center">
+            <h3 className="font-bold mb-2">Check-In QR Code</h3>
+            <QRCodeSVG value="https://er-attendance-frontend.onrender.com/" size={150} />
           </div>
         </div>
 
-        {/* QR Section */}
-        <div className="bg-white p-6 rounded-xl shadow border flex flex-col items-center">
-          <h3 className="font-bold mb-4">Check-In QR</h3>
-          <QRCodeSVG value="https://er-attendance-frontend.onrender.com/" size={200} />
-          <p className="text-sm text-gray-500 mt-4">Place this at the entrance.</p>
+        {/* List */}
+        <div className="lg:col-span-2 bg-white p-6 rounded shadow overflow-y-auto max-h-[500px]">
+          <h3 className="font-bold mb-4">Registered Volunteers</h3>
+          <table className="w-full text-left">
+            <thead><tr className="border-b"><th>Name</th><th>Phone</th><th>Team</th></tr></thead>
+            <tbody>
+              {volunteers.map(v => (
+                <tr key={v.id} className="border-b">
+                  <td className="py-2">{v.full_name}</td>
+                  <td className="py-2">{v.phone_number}</td>
+                  <td className="py-2">{v.team}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
