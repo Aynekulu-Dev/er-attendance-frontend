@@ -20,7 +20,6 @@ const AdminDashboard = () => {
     <div className="p-6 bg-green-50 min-h-screen">
       {/* የላይኛው የ Navigation አዝራሮች */}
       <div className="flex gap-4 mb-6">
-        <button className="bg-white px-6 py-2 rounded-lg shadow font-bold">Check-In / Out Portal</button>
         <button className="bg-green-600 text-white px-6 py-2 rounded-lg shadow font-bold">Admin Dashboard</button>
       </div>
 
