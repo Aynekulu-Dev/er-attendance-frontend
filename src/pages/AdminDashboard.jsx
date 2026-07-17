@@ -3,7 +3,12 @@ import { QRCodeSVG } from 'qrcode.react';
 
 const AdminDashboard = () => {
   const [volunteers, setVolunteers] = useState([]);
-  const [stats, setStats] = useState({ present_today: 0, qualified: 0 });
+  const [stats, setStats] = useState({ 
+    total_volunteers: 0, 
+    active_today: 0, 
+    today_attendance_count: 0, 
+    certified_volunteers_count: 0 
+  });
   const [formData, setFormData] = useState({ full_name: '', phone_number: '', team: 'General' });
 
   useEffect(() => { fetchData(); }, []);
@@ -11,8 +16,8 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     const token = localStorage.getItem('admin_token');
     if (!token) { window.location.href = '/login'; return; }
-    
     const headers = { "Authorization": `Bearer ${token}` };
+    
     try {
       const [vRes, aRes] = await Promise.all([
         fetch("https://er-attendance-backend.onrender.com/api/volunteers", { headers }),
@@ -20,88 +25,92 @@ const AdminDashboard = () => {
       ]);
       if (vRes.ok) setVolunteers(await vRes.json());
       if (aRes.ok) setStats(await aRes.json());
-    } catch (err) { console.error("Error:", err); }
+    } catch (err) { console.error("Error loading data:", err); }
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!formData.full_name) { alert("Please enter the volunteer's name!"); return; }
-    
     const token = localStorage.getItem('admin_token');
     const res = await fetch("https://er-attendance-backend.onrender.com/api/volunteers", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       body: JSON.stringify(formData)
     });
-    
     if (res.ok) {
-      const data = await res.json();
-      alert(`Success! Volunteer Registered.\nID: ${data.volunteer_id}\nName: ${formData.full_name}`);
+      alert("Volunteer Registered Successfully!");
       setFormData({ full_name: '', phone_number: '', team: 'General' });
       fetchData();
-    } else {
-      alert("Registration failed! Please check the connection.");
     }
   };
 
-  const handleExport = async () => {
-    const token = localStorage.getItem('admin_token');
-    const res = await fetch("https://er-attendance-backend.onrender.com/api/admin/export-csv", { 
-      headers: { "Authorization": `Bearer ${token}` } 
-    });
-    if (res.ok) {
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = "attendance_report.csv"; a.click();
-    } else { alert("Failed to export."); }
-  };
-
   return (
-    <div className="p-8 bg-gray-100 min-h-screen">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <button onClick={() => { localStorage.removeItem('admin_token'); window.location.href = '/login'; }} className="bg-red-500 text-white px-6 py-2 rounded">Logout</button>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+        <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+        <button onClick={() => { localStorage.removeItem('admin_token'); window.location.href = '/login'; }} className="bg-red-50 text-red-600 px-4 py-2 rounded-lg font-semibold hover:bg-red-100 transition">Logout</button>
       </div>
 
+      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded shadow"> <p>Total Volunteers</p> <h2 className="text-2xl font-bold">{volunteers.length}</h2> </div>
-        <div className="bg-white p-6 rounded shadow"> <p>Present Today</p> <h2 className="text-2xl font-bold text-blue-600">{stats.present_today}</h2> </div>
-        <div className="bg-white p-6 rounded shadow"> <p>Qualified (7 Weeks)</p> <h2 className="text-2xl font-bold text-green-600">{stats.qualified}</h2> </div>
-        <button onClick={handleExport} className="bg-green-700 text-white rounded font-bold">Export CSV Report</button>
+        {[
+          { label: "Total Volunteers", value: stats.total_volunteers, color: "text-gray-900" },
+          { label: "Active Today", value: stats.active_today, color: "text-blue-600" },
+          { label: "Check-in Count", value: stats.today_attendance_count, color: "text-orange-600" },
+          { label: "Certified Ready", value: stats.certified_volunteers_count, color: "text-green-600" }
+        ].map((item, idx) => (
+          <div key={idx} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+            <p className="text-sm text-gray-500 font-medium">{item.label}</p>
+            <h2 className={`text-3xl font-bold mt-2 ${item.color}`}>{item.value}</h2>
+          </div>
+        ))}
       </div>
 
+      {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="bg-white p-6 rounded shadow">
-          <h3 className="font-bold mb-4">Add New Volunteer</h3>
+        {/* Register Form */}
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+          <h3 className="font-bold text-lg mb-4">Add New Volunteer</h3>
           <form onSubmit={handleRegister} className="space-y-4">
-            <input className="w-full p-2 border rounded" placeholder="Full Name" value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} required />
-            <input className="w-full p-2 border rounded" placeholder="Phone" value={formData.phone_number} onChange={e => setFormData({...formData, phone_number: e.target.value})} />
-            <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded">Register Volunteer</button>
+            <input className="w-full p-3 border border-gray-200 rounded-lg" placeholder="Full Name" value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} required />
+            <input className="w-full p-3 border border-gray-200 rounded-lg" placeholder="Phone Number" value={formData.phone_number} onChange={e => setFormData({...formData, phone_number: e.target.value})} />
+            <button type="submit" className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition">Register</button>
           </form>
           <div className="mt-8 flex flex-col items-center">
-            <h3 className="font-bold mb-2">Check-In QR Code</h3>
-            <QRCodeSVG value="https://er-attendance-frontend.onrender.com/" size={150} />
+            <p className="text-sm text-gray-500 mb-2">Check-In QR Code</p>
+            <QRCodeSVG value="https://er-attendance-frontend.onrender.com/" size={140} />
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-white p-6 rounded shadow overflow-y-auto max-h-[500px]">
-          <h3 className="font-bold mb-4">Registered Volunteers</h3>
-          <table className="w-full text-left">
-            <thead><tr className="border-b"><th>Name</th><th>Phone</th><th>Team</th><th>ID</th></tr></thead>
-            <tbody>
-              {volunteers.map(v => (
-                <tr key={v.volunteer_id} className="border-b">
-                  <td className="py-2">{v.full_name}</td>
-                  <td className="py-2">{v.phone_number}</td>
-                  <td className="py-2">{v.team}</td>
-                  <td className="py-2 font-bold">{v.volunteer_id}</td>
+        {/* Volunteers Table */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <h3 className="font-bold text-lg mb-4">Registered Volunteers</h3>
+          <div className="overflow-x-auto max-h-[450px] overflow-y-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-50 sticky top-0">
+                <tr>
+                  <th className="p-3 text-sm font-semibold text-gray-600">Name</th>
+                  <th className="p-3 text-sm font-semibold text-gray-600">Phone</th>
+                  <th className="p-3 text-sm font-semibold text-gray-600">Team</th>
+                  <th className="p-3 text-sm font-semibold text-gray-600">ID</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {volunteers.map(v => (
+                  <tr key={v.volunteer_id} className="border-b hover:bg-gray-50">
+                    <td className="p-3 text-gray-700 font-medium">{v.full_name}</td>
+                    <td className="p-3 text-gray-600">{v.phone_number}</td>
+                    <td className="p-3 text-gray-600">{v.team}</td>
+                    <td className="p-3 font-bold text-green-700">{v.volunteer_id}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
 export default AdminDashboard;
