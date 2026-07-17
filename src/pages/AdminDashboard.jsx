@@ -25,23 +25,35 @@ const AdminDashboard = () => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (!formData.full_name) { alert("Please enter the volunteer's name!"); return; }
+    
     const token = localStorage.getItem('admin_token');
     const res = await fetch("https://er-attendance-backend.onrender.com/api/volunteers", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       body: JSON.stringify(formData)
     });
-    if (res.ok) { alert("Registered!"); setFormData({ full_name: '', phone_number: '', team: 'General' }); fetchData(); }
+    
+    if (res.ok) {
+      const data = await res.json();
+      alert(`Success! Volunteer Registered.\nID: ${data.volunteer_id}\nName: ${formData.full_name}`);
+      setFormData({ full_name: '', phone_number: '', team: 'General' });
+      fetchData();
+    } else {
+      alert("Registration failed! Please check the connection.");
+    }
   };
 
   const handleExport = async () => {
     const token = localStorage.getItem('admin_token');
-    const res = await fetch("https://er-attendance-backend.onrender.com/api/admin/export-csv", { headers: { "Authorization": `Bearer ${token}` } });
+    const res = await fetch("https://er-attendance-backend.onrender.com/api/admin/export-csv", { 
+      headers: { "Authorization": `Bearer ${token}` } 
+    });
     if (res.ok) {
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = "attendance_report.csv"; a.click();
-    }
+    } else { alert("Failed to export."); }
   };
 
   return (
@@ -59,7 +71,6 @@ const AdminDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Registration Form */}
         <div className="bg-white p-6 rounded shadow">
           <h3 className="font-bold mb-4">Add New Volunteer</h3>
           <form onSubmit={handleRegister} className="space-y-4">
@@ -73,17 +84,17 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* List */}
         <div className="lg:col-span-2 bg-white p-6 rounded shadow overflow-y-auto max-h-[500px]">
           <h3 className="font-bold mb-4">Registered Volunteers</h3>
           <table className="w-full text-left">
-            <thead><tr className="border-b"><th>Name</th><th>Phone</th><th>Team</th></tr></thead>
+            <thead><tr className="border-b"><th>Name</th><th>Phone</th><th>Team</th><th>ID</th></tr></thead>
             <tbody>
               {volunteers.map(v => (
-                <tr key={v.id} className="border-b">
+                <tr key={v.volunteer_id} className="border-b">
                   <td className="py-2">{v.full_name}</td>
                   <td className="py-2">{v.phone_number}</td>
                   <td className="py-2">{v.team}</td>
+                  <td className="py-2 font-bold">{v.volunteer_id}</td>
                 </tr>
               ))}
             </tbody>
