@@ -3,57 +3,61 @@ import { QRCodeSVG } from 'qrcode.react';
 
 const AdminDashboard = () => {
   const [authToken] = useState(localStorage.getItem('admin_token') || '');
-  const [analytics, setAnalytics] = useState({ total_volunteers: 0, today_attendance: 0, qualified: 0 });
+  const [analytics, setAnalytics] = useState({ present_today: 0, qualified: 0 });
   const [volunteersList, setVolunteersList] = useState([]);
 
-  // መረጃዎችን ከባክኤንድ የሚጠራበት
   useEffect(() => {
     if (!authToken) return;
-    fetch("https://er-attendance-backend.onrender.com/api/volunteers", { headers: { "Authorization": `Bearer ${authToken}` } })
-      .then(res => res.json()).then(data => setVolunteersList(data || []));
     
-    fetch("https://er-attendance-backend.onrender.com/api/admin/analytics", { headers: { "Authorization": `Bearer ${authToken}` } })
-      .then(res => res.json()).then(data => setAnalytics(data));
+    // Volunteers ዝርዝር
+    fetch("https://er-attendance-backend.onrender.com/api/volunteers", { 
+      headers: { "Authorization": `Bearer ${authToken}` } 
+    })
+    .then(res => res.json()).then(data => setVolunteersList(data || []));
+    
+    // Analytics
+    fetch("https://er-attendance-backend.onrender.com/api/admin/analytics", { 
+      headers: { "Authorization": `Bearer ${authToken}` } 
+    })
+    .then(res => res.json()).then(data => setAnalytics(data));
   }, [authToken]);
 
   return (
     <div className="p-6 bg-green-50 min-h-screen">
-      {/* የላይኛው የ Navigation አዝራሮች */}
       <div className="flex gap-4 mb-6">
         <button className="bg-green-600 text-white px-6 py-2 rounded-lg shadow font-bold">Admin Dashboard</button>
       </div>
 
-      {/* 3ቱ የስታቲስቲክስ ሳጥኖች */}
+      {/* Stats - volunteersList.length ተጠቀምኩ */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
-          <p className="text-gray-500 text-sm">ጠቅላላ ቮለንቲየሮች</p>
-          <h2 className="text-3xl font-black text-green-700">{analytics.total_volunteers}</h2>
+          <p className="text-gray-500 text-sm">Total Volunteers</p>
+          <h2 className="text-3xl font-black text-green-700">{volunteersList.length}</h2>
         </div>
         <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
-          <p className="text-gray-500 text-sm">ዛሬ የተገኙ</p>
-          <h2 className="text-3xl font-black text-blue-700">{analytics.today_attendance}</h2>
+          <p className="text-gray-500 text-sm">Present Today</p>
+          <h2 className="text-3xl font-black text-blue-700">{analytics.present_today}</h2>
         </div>
         <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
-          <p className="text-gray-500 text-sm">የ 7 ሰኞት ሰርተፍኬት ብቁ</p>
+          <p className="text-gray-500 text-sm">Certified Eligible</p>
           <h2 className="text-3xl font-black text-amber-600">{analytics.qualified}</h2>
         </div>
-        <button className="bg-green-700 text-white p-6 rounded-xl font-bold shadow hover:bg-green-800">📥 Export CSV Backup</button>
+        <button className="bg-green-700 text-white p-6 rounded-xl font-bold shadow hover:bg-green-800">Export CSV Backup</button>
       </div>
 
-      {/* ዋናዎቹ 3 ክፍሎች */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* መመዝገቢያ */}
+        {/* Registration */}
         <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
-          <h3 className="font-bold text-lg mb-4">አዲስ ቮለንቲየር መመዝገቢያ</h3>
-          <input className="w-full border p-3 rounded-lg mb-3" placeholder="ሙሉ ስም *" />
-          <input className="w-full border p-3 rounded-lg mb-3" placeholder="ስልክ ቁጥር" />
+          <h3 className="font-bold text-lg mb-4">New Volunteer Registration</h3>
+          <input className="w-full border p-3 rounded-lg mb-3" placeholder="Full Name *" />
+          <input className="w-full border p-3 rounded-lg mb-3" placeholder="Phone Number" />
           <input className="w-full border p-3 rounded-lg mb-4" defaultValue="General" />
-          <button className="w-full bg-green-600 text-white py-3 rounded-lg font-bold">ይመዝገቡ</button>
+          <button className="w-full bg-green-600 text-white py-3 rounded-lg font-bold">Register</button>
         </div>
 
-        {/* ዝርዝር */}
+        {/* List */}
         <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
-          <h3 className="font-bold text-lg mb-4">የተመዘገቡ ቮለንቲየሮች</h3>
+          <h3 className="font-bold text-lg mb-4">Registered Volunteers</h3>
           {volunteersList.map(v => (
             <div key={v.id} className="border-b py-3 flex justify-between items-center">
               <div>
@@ -65,10 +69,10 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* QR ኮድ */}
+        {/* QR */}
         <div className="bg-white p-6 rounded-xl shadow border border-gray-100 text-center flex flex-col items-center">
-          <h3 className="font-bold text-lg mb-2">የግድግዳ QR ኮድ ማተሚያ</h3>
-          <p className="text-xs text-gray-500 mb-4">ይህንን QR ኮድ አውርደህ በኤፎር (A4) ወረቀት በማተም ግድግዳው ላይ መለጠፍ ትችላለህ።</p>
+          <h3 className="font-bold text-lg mb-2">QR Code Printing</h3>
+          <p className="text-xs text-gray-500 mb-4">Print this QR code and paste it on the wall.</p>
           <QRCodeSVG value="https://er-attendance-frontend.onrender.com/" size={180} />
           <button className="w-full mt-6 bg-blue-600 text-white py-3 rounded-lg font-bold">Download QR Code (PNG)</button>
         </div>
