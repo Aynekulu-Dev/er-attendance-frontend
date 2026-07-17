@@ -45,7 +45,7 @@ function App() {
     formData.append('username', adminUsername);
     formData.append('password', adminPassword);
 
-    fetch("http://localhost:8000/api/admin/login", {
+    fetch("https://er-attendance-backend.onrender.com", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: formData
@@ -77,7 +77,7 @@ function App() {
     if (!authToken) return;
 
     // ሀ. ቮለንቲየሮችን መጫን
-    fetch("http://localhost:8000/api/volunteers", {
+    fetch("https://er-attendance-backend.onrender.com", {
       headers: { "Authorization": `Bearer ${authToken}` }
     })
     .then((res) => {
@@ -88,7 +88,7 @@ function App() {
     .catch(() => console.log("ቮለንቲየሮችን መጫን አልተቻለም"));
 
     // ለ. አናሊቲክስ መጫን
-    fetch("http://localhost:8000/api/admin/analytics", {
+    fetch("https://er-attendance-backend.onrender.com/admin/analytics", {
       headers: { "Authorization": `Bearer ${authToken}` }
     })
     .then((res) => res.json())
@@ -121,7 +121,7 @@ function App() {
       (position) => {
         const { latitude, longitude } = position.coords;
 
-        fetch("http://localhost:8000/api/attendance", {
+        fetch("https://er-attendance-backend.onrender.com/api/attendance", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -166,7 +166,7 @@ function App() {
       return;
     }
 
-    fetch("http://localhost:8000/api/volunteers", {
+    fetch("https://er-attendance-backend.onrender.com/api/volunteers", {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
@@ -201,7 +201,7 @@ function App() {
 
   // 6. CSV ዳውንሎድ ማድረጊያ (Protected with Admin Token)
   const downloadCSV = () => {
-    fetch("http://localhost:8000/api/admin/export-csv", {
+    fetch("https://er-attendance-backend.onrender.com/api/admin/export-csv", {
       headers: { "Authorization": `Bearer ${authToken}` }
     })
     .then(async (res) => {
@@ -511,7 +511,7 @@ function App() {
                 <span className="text-xs font-bold text-green-700 tracking-wider mb-2">ETHIOPIA READS</span>
                 <QRCodeSVG
                   id="qr-gen"
-                  value="http://localhost:5173" // በሞባይል ስካን ሲደረግ የሚከፈተው የእውነተኛው ፖርታል ሊንክ
+                  value="https://er-attendance-frontend.onrender.com" // በሞባይል ስካን ሲደረግ የሚከፈተው የእውነተኛው ፖርታል ሊንክ
                   size={180}
                   level={"H"}
                   includeMargin={true}
