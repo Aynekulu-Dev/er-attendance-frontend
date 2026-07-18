@@ -261,14 +261,32 @@ function Dashboard() {
   const [tab, setTab] = useState("volunteers"); // "volunteers" | "log"
 
   async function loadAll() {
-    const [v, a, log] = await Promise.all([
+    // Promise.allSettled ን እንጠቀማለን (Promise.all ሳይሆን) - ስለዚህ ከ3ቱ
+    // 1ኛው ቢወድቅ (ለምሳሌ attendance-log ገና migration ካልተደረገ) ሌሎቹ
+    // (volunteers, analytics) አሁንም ይታደሳሉ።
+    const [vResult, aResult, logResult] = await Promise.allSettled([
       adminListVolunteers(),
       adminGetAnalytics(),
       adminGetAttendanceLog(),
     ]);
-    setVolunteers(v);
-    setAnalytics(a);
-    setAttendanceLog(log);
+
+    if (vResult.status === "fulfilled") {
+      setVolunteers(vResult.value);
+    } else {
+      console.error("Failed to load volunteers:", vResult.reason);
+    }
+
+    if (aResult.status === "fulfilled") {
+      setAnalytics(aResult.value);
+    } else {
+      console.error("Failed to load analytics:", aResult.reason);
+    }
+
+    if (logResult.status === "fulfilled") {
+      setAttendanceLog(logResult.value);
+    } else {
+      console.error("Failed to load attendance log:", logResult.reason);
+    }
   }
 
   useEffect(() => {
