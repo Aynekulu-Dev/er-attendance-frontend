@@ -7,6 +7,7 @@ import {
   adminRegisterVolunteer,
   adminListVolunteers,
   adminGetAnalytics,
+  adminGetAttendanceLog,
   adminExportCsv,
 } from "../api/client";
 
@@ -190,14 +191,84 @@ function AnalyticsBar({ analytics }) {
   );
 }
 
+// NEW: per-checkin/checkout IP + device, so admin can spot "friend used my ID" cases.
+// A red "⚠ IP changed" badge is informational only - it does NOT block anything,
+// since people legitimately switch between WiFi/mobile data.
+function shortenDevice(userAgent) {
+  if (!userAgent) return "—";
+  if (/iphone/i.test(userAgent)) return "iPhone";
+  if (/android/i.test(userAgent)) return "Android";
+  if (/windows/i.test(userAgent)) return "Windows PC";
+  if (/macintosh/i.test(userAgent)) return "Mac";
+  return userAgent.slice(0, 40) + (userAgent.length > 40 ? "…" : "");
+}
+
+function AttendanceLogTable({ log }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-fit">
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50 text-gray-500 text-left">
+          <tr>
+            <th className="px-4 py-2">Volunteer</th>
+            <th className="px-4 py-2">Date</th>
+            <th className="px-4 py-2">Check-In (IP / Device)</th>
+            <th className="px-4 py-2">Check-Out (IP / Device)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {log.map((r) => (
+            <tr key={r.id} className="border-t border-gray-100 align-top">
+              <td className="px-4 py-2">
+                {r.full_name} <span className="text-gray-400 font-mono text-xs">({r.volunteer_id})</span>
+              </td>
+              <td className="px-4 py-2">{r.date}</td>
+              <td className="px-4 py-2">
+                {r.check_in_time ? new Date(r.check_in_time).toLocaleTimeString() : "—"}
+                <br />
+                <span className="text-xs text-gray-400">
+                  {r.check_in_ip || "—"} · {shortenDevice(r.check_in_device)}
+                </span>
+              </td>
+              <td className="px-4 py-2">
+                {r.check_out_time ? new Date(r.check_out_time).toLocaleTimeString() : "—"}
+                <br />
+                <span className="text-xs text-gray-400">
+                  {r.check_out_ip || "—"} · {shortenDevice(r.check_out_device)}
+                </span>
+                {r.ip_mismatch && (
+                  <div className="text-xs text-amber-600 mt-1">⚠ IP changed since check-in</div>
+                )}
+              </td>
+            </tr>
+          ))}
+          {log.length === 0 && (
+            <tr>
+              <td colSpan={4} className="px-4 py-6 text-center text-gray-400">
+                No attendance records yet.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function Dashboard() {
   const [volunteers, setVolunteers] = useState([]);
   const [analytics, setAnalytics] = useState(null);
+  const [attendanceLog, setAttendanceLog] = useState([]);
+  const [tab, setTab] = useState("volunteers"); // "volunteers" | "log"
 
   async function loadAll() {
-    const [v, a] = await Promise.all([adminListVolunteers(), adminGetAnalytics()]);
+    const [v, a, log] = await Promise.all([
+      adminListVolunteers(),
+      adminGetAnalytics(),
+      adminGetAttendanceLog(),
+    ]);
     setVolunteers(v);
     setAnalytics(a);
+    setAttendanceLog(log);
   }
 
   useEffect(() => {
@@ -235,40 +306,60 @@ function Dashboard() {
           <RegisterForm onCreated={loadAll} />
         </div>
 
-        <div className="md:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-fit">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500 text-left">
-              <tr>
-                <th className="px-4 py-2">ID</th>
-                <th className="px-4 py-2">Name</th>
-                <th className="px-4 py-2">Team</th>
-                <th className="px-4 py-2">Certificate</th>
-              </tr>
-            </thead>
-            <tbody>
-              {volunteers.map((v) => (
-                <tr key={v.volunteer_id} className="border-t border-gray-100">
-                  <td className="px-4 py-2 font-mono">{v.volunteer_id}</td>
-                  <td className="px-4 py-2">{v.full_name}</td>
-                  <td className="px-4 py-2">{v.team}</td>
-                  <td className="px-4 py-2">
-                    {v.is_eligible_for_certificate ? (
-                      <span className="text-green-600">✓ Eligible</span>
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {volunteers.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-gray-400">
-                    No volunteers registered yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div className="md:col-span-2 space-y-3">
+          <div className="flex gap-2">
+            {["volunteers", "log"].map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  tab === t ? "bg-green-600 text-white" : "bg-white text-gray-600 border border-gray-200"
+                }`}
+              >
+                {t === "volunteers" ? "Volunteers" : "Attendance Log"}
+              </button>
+            ))}
+          </div>
+
+          {tab === "volunteers" && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-fit">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-gray-500 text-left">
+                  <tr>
+                    <th className="px-4 py-2">ID</th>
+                    <th className="px-4 py-2">Name</th>
+                    <th className="px-4 py-2">Team</th>
+                    <th className="px-4 py-2">Certificate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {volunteers.map((v) => (
+                    <tr key={v.volunteer_id} className="border-t border-gray-100">
+                      <td className="px-4 py-2 font-mono">{v.volunteer_id}</td>
+                      <td className="px-4 py-2">{v.full_name}</td>
+                      <td className="px-4 py-2">{v.team}</td>
+                      <td className="px-4 py-2">
+                        {v.is_eligible_for_certificate ? (
+                          <span className="text-green-600">✓ Eligible</span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {volunteers.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-6 text-center text-gray-400">
+                        No volunteers registered yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {tab === "log" && <AttendanceLogTable log={attendanceLog} />}
         </div>
       </div>
     </div>

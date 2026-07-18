@@ -49,6 +49,9 @@ export const adminListVolunteers = () => api.get("/api/volunteers").then((r) => 
 
 export const adminGetAnalytics = () => api.get("/api/admin/analytics").then((r) => r.data);
 
+// NEW: full attendance log with IP/device per check-in & check-out (anti-fraud review)
+export const adminGetAttendanceLog = () => api.get("/api/admin/attendance-log").then((r) => r.data);
+
 // Backend's admin endpoints only check the Authorization header (not a query
 // param), so a plain <a href="..."> download link can't authenticate. We
 // fetch the file as a blob (interceptor above attaches the token) and then
