@@ -15,6 +15,33 @@ import {
 // wherever it happens to be deployed - so it works automatically on Render.
 const VOLUNTEER_PAGE_URL = `${window.location.origin}/`;
 
+// Backend timestamps (check_in_time / check_out_time) are always generated
+// with datetime.utcnow() and serialized WITHOUT a timezone suffix
+// (e.g. "2026-07-18T04:28:51.123456"). When a string like that is handed to
+// `new Date(...)`, JavaScript assumes it's already in the browser's LOCAL
+// timezone (per the ECMAScript spec) - so no conversion happens and the raw
+// UTC numbers get displayed as if they were local time. Since Ethiopia is
+// UTC+3, this made every check-in/check-out show ~3 hours earlier than the
+// real local time.
+//
+// Fix: explicitly mark the string as UTC (append "Z") before parsing, so the
+// browser correctly converts it to the viewer's local timezone.
+function formatLocalTime(isoString) {
+  if (!isoString) return "—";
+  const utcString = isoString.endsWith("Z") ? isoString : `${isoString}Z`;
+  const d = new Date(utcString);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleTimeString();
+}
+
+function formatLocalDate(isoString) {
+  if (!isoString) return "—";
+  const utcString = isoString.endsWith("Z") ? isoString : `${isoString}Z`;
+  const d = new Date(utcString);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString();
+}
+
 function LoginForm({ onSuccess }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -221,16 +248,16 @@ function AttendanceLogTable({ log }) {
               <td className="px-4 py-2">
                 {r.full_name} <span className="text-gray-400 font-mono text-xs">({r.volunteer_id})</span>
               </td>
-              <td className="px-4 py-2">{r.date}</td>
+              <td className="px-4 py-2 whitespace-nowrap">{formatLocalDate(r.check_in_time) || r.date}</td>
               <td className="px-4 py-2">
-                {r.check_in_time ? new Date(r.check_in_time).toLocaleTimeString() : "—"}
+                {formatLocalTime(r.check_in_time)}
                 <br />
                 <span className="text-xs text-gray-400">
                   {r.check_in_ip || "—"} · {shortenDevice(r.check_in_device)}
                 </span>
               </td>
               <td className="px-4 py-2">
-                {r.check_out_time ? new Date(r.check_out_time).toLocaleTimeString() : "—"}
+                {formatLocalTime(r.check_out_time)}
                 <br />
                 <span className="text-xs text-gray-400">
                   {r.check_out_ip || "—"} · {shortenDevice(r.check_out_device)}
