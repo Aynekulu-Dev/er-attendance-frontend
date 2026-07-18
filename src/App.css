@@ -1,9 +1,0 @@
-/* App.css */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-body {
-  background-color: #f9fafb; /* ቀላል ግራጫ ለጀርባ */
-  font-family: 'Inter', sans-serif;
-}

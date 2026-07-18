@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import BrandMark from "../components/BrandMark";
 import {
   adminLogin,
   adminLogout,
@@ -42,6 +43,9 @@ function formatLocalDate(isoString) {
   return d.toLocaleDateString();
 }
 
+const inputClass =
+  "w-full rounded-lg border border-sand px-3.5 py-2.5 text-sm text-ink placeholder:text-slate/60 focus:outline-none focus:ring-2 focus:ring-forest/40 focus:border-forest transition";
+
 function LoginForm({ onSuccess }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -55,39 +59,43 @@ function LoginForm({ onSuccess }) {
     try {
       await adminLogin(username, password);
       onSuccess();
-    } catch {
-      setError("የተሳሳተ የተጠቃሚ ስም ወይም የይለፍ ቃል።");
+    } catch (err) {
+      setError(err?.response?.data?.detail || "የተጠቃሚ ስም ወይም የይለፍ ቃል ትክክል አይደለም። እንደገና ሞክር።");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-paper bg-dot-grid">
       <form
         onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-2xl shadow-md w-full max-w-sm space-y-4 border border-gray-100"
+        className="bg-white p-8 rounded-2xl shadow-sm w-full max-w-sm space-y-5 border border-sand"
       >
-        <h1 className="text-xl font-bold text-green-700 text-center">Admin Login</h1>
+        <div className="flex flex-col items-center text-center">
+          <BrandMark size={44} className="mb-3" />
+          <h1 className="font-display font-semibold text-xl text-ink">Admin login</h1>
+          <p className="text-slate text-xs mt-1">Ethiopia Reads attendance</p>
+        </div>
         <input
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+          className={inputClass}
         />
         <input
           placeholder="Password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+          className={inputClass}
         />
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-brick">{error}</p>}
         <button
           disabled={loading}
-          className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition disabled:opacity-60"
+          className="w-full bg-forest hover:bg-forest-dark active:scale-[0.98] text-white font-semibold py-2.5 rounded-lg transition disabled:opacity-60"
         >
-          {loading ? "..." : "Log in"}
+          {loading ? "…" : "Log in"}
         </button>
       </form>
     </div>
@@ -98,7 +106,11 @@ function QrDownloadCard() {
   const [qrDataUrl, setQrDataUrl] = useState(null);
 
   useEffect(() => {
-    QRCode.toDataURL(VOLUNTEER_PAGE_URL, { width: 400, margin: 2 }).then(setQrDataUrl);
+    QRCode.toDataURL(VOLUNTEER_PAGE_URL, {
+      width: 400,
+      margin: 2,
+      color: { dark: "#20261F", light: "#FFFFFF" },
+    }).then(setQrDataUrl);
   }, []);
 
   function download() {
@@ -110,21 +122,21 @@ function QrDownloadCard() {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 text-center space-y-3">
-      <h2 className="font-semibold text-gray-800">Wall QR Code</h2>
+    <div className="bg-white rounded-2xl shadow-sm border border-sand p-5 text-center space-y-3">
+      <h2 className="font-semibold text-ink text-sm">Wall QR code</h2>
       {qrDataUrl ? (
-        <img src={qrDataUrl} alt="Volunteer check-in QR code" className="w-48 h-48 mx-auto rounded-lg border" />
+        <img src={qrDataUrl} alt="Volunteer check-in QR code" className="w-48 h-48 mx-auto rounded-lg border border-sand" />
       ) : (
-        <div className="w-48 h-48 mx-auto flex items-center justify-center text-gray-400">Loading...</div>
+        <div className="w-48 h-48 mx-auto flex items-center justify-center text-slate text-sm">Loading…</div>
       )}
-      <p className="text-xs text-gray-400 break-all">{VOLUNTEER_PAGE_URL}</p>
+      <p className="text-xs text-slate break-all">{VOLUNTEER_PAGE_URL}</p>
       <button
         onClick={download}
-        className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition"
+        className="w-full bg-forest hover:bg-forest-dark active:scale-[0.98] text-white font-semibold py-2 rounded-lg transition"
       >
-        Download QR Code
+        Download QR code
       </button>
-      <p className="text-xs text-gray-400">አትመው ግድግዳ ላይ ለጥፍ — volunteers ይህን scan ያደርጋሉ።</p>
+      <p className="text-xs text-slate">አትመው ግድግዳ ላይ ለጥፍ — volunteers ይህን scan ያደርጋሉ።</p>
     </div>
   );
 }
@@ -154,7 +166,8 @@ function RegisterForm({ onCreated }) {
     } catch (err) {
       setFeedback({
         status: "error",
-        message: err?.response?.data?.detail || "ቮለንቲየር መመዝገብ አልተቻለም።",
+        message:
+          err?.response?.data?.detail || "ቮለንቲየር መመዝገብ አልተቻለም። ስሙ በትክክል መግባቱን አረጋግጥና እንደገና ሞክር።",
       });
     } finally {
       setSubmitting(false);
@@ -162,37 +175,37 @@ function RegisterForm({ onCreated }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-3">
-      <h2 className="font-semibold text-gray-800">Register New Volunteer</h2>
+    <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-sand p-5 space-y-3">
+      <h2 className="font-semibold text-ink text-sm">Register new volunteer</h2>
       <input
         required
         placeholder="Full name"
         value={fullName}
         onChange={(e) => setFullName(e.target.value)}
-        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+        className={inputClass}
       />
       <input
         placeholder="Phone number (optional)"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
-        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+        className={inputClass}
       />
       <input
         placeholder="Team (e.g. Reading and Literacy)"
         value={team}
         onChange={(e) => setTeam(e.target.value)}
-        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+        className={inputClass}
       />
       {feedback && (
-        <p className={`text-sm ${feedback.status === "success" ? "text-green-600" : "text-red-600"}`}>
+        <p className={`text-sm ${feedback.status === "success" ? "text-forest-dark" : "text-brick"}`}>
           {feedback.message}
         </p>
       )}
       <button
         disabled={submitting}
-        className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition disabled:opacity-60"
+        className="w-full bg-forest hover:bg-forest-dark active:scale-[0.98] text-white font-semibold py-2 rounded-lg transition disabled:opacity-60"
       >
-        {submitting ? "Adding..." : "Add Volunteer"}
+        {submitting ? "Adding…" : "Add volunteer"}
       </button>
     </form>
   );
@@ -201,26 +214,40 @@ function RegisterForm({ onCreated }) {
 function AnalyticsBar({ analytics }) {
   if (!analytics) return null;
   const cards = [
-    { label: "Total Volunteers", value: analytics.total_volunteers },
-    { label: "Checked In Today", value: analytics.today_checkins },
-    { label: "Checked Out Today", value: analytics.today_checkouts },
-    { label: "Certificate Eligible", value: analytics.certified_volunteers_count },
+    { label: "Total volunteers", value: analytics.total_volunteers },
+    { label: "Checked in today", value: analytics.today_checkins },
+    { label: "Checked out today", value: analytics.today_checkouts },
+    { label: "Certificate eligible", value: analytics.certified_volunteers_count },
   ];
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
       {cards.map((c) => (
-        <div key={c.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">
-          <p className="text-2xl font-bold text-green-700">{c.value}</p>
-          <p className="text-xs text-gray-500 mt-1">{c.label}</p>
+        <div key={c.label} className="bg-white rounded-xl border border-sand shadow-sm p-4 text-center">
+          <p className="text-2xl font-display font-semibold text-forest">{c.value}</p>
+          <p className="text-xs text-slate mt-1">{c.label}</p>
         </div>
       ))}
+      <div
+        className={`rounded-xl border shadow-sm p-4 text-center ${
+          analytics.suspicious_checkins_today > 0
+            ? "bg-gold-light border-gold/40"
+            : "bg-white border-sand"
+        }`}
+        title="Same phone used to check in more than one volunteer ID within a short time window - review only, nothing is blocked"
+      >
+        <p className={`text-2xl font-display font-semibold ${analytics.suspicious_checkins_today > 0 ? "text-gold" : "text-ink"}`}>
+          {analytics.suspicious_checkins_today}
+        </p>
+        <p className="text-xs text-slate mt-1">Flagged for review</p>
+      </div>
     </div>
   );
 }
 
-// NEW: per-checkin/checkout IP + device, so admin can spot "friend used my ID" cases.
-// A red "⚠ IP changed" badge is informational only - it does NOT block anything,
-// since people legitimately switch between WiFi/mobile data.
+// Same phone used to check in more than one volunteer within a short time
+// window (see SHARED_DEVICE_WINDOW_MINUTES in the backend .env).
+// This never blocks anything - siblings legitimately sharing one phone would
+// otherwise look identical to "used a friend's ID" - the admin decides.
 function shortenDevice(userAgent) {
   if (!userAgent) return "—";
   if (/iphone/i.test(userAgent)) return "iPhone";
@@ -232,45 +259,48 @@ function shortenDevice(userAgent) {
 
 function AttendanceLogTable({ log }) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-fit">
+    <div className="bg-white rounded-2xl shadow-sm border border-sand overflow-hidden h-fit">
       <table className="w-full text-sm">
-        <thead className="bg-gray-50 text-gray-500 text-left">
+        <thead className="bg-forest-light text-slate text-left">
           <tr>
-            <th className="px-4 py-2">Volunteer</th>
-            <th className="px-4 py-2">Date</th>
-            <th className="px-4 py-2">Check-In (IP / Device)</th>
-            <th className="px-4 py-2">Check-Out (IP / Device)</th>
+            <th className="px-4 py-2.5 font-medium">Volunteer</th>
+            <th className="px-4 py-2.5 font-medium">Date</th>
+            <th className="px-4 py-2.5 font-medium">Check-in (IP / device)</th>
+            <th className="px-4 py-2.5 font-medium">Check-out (IP / device)</th>
           </tr>
         </thead>
         <tbody>
           {log.map((r) => (
-            <tr key={r.id} className="border-t border-gray-100 align-top">
-              <td className="px-4 py-2">
-                {r.full_name} <span className="text-gray-400 font-mono text-xs">({r.volunteer_id})</span>
+            <tr key={r.id} className="border-t border-sand align-top">
+              <td className="px-4 py-2.5">
+                {r.full_name} <span className="text-slate font-mono text-xs">({r.volunteer_id})</span>
+                {r.shared_device_flag && (
+                  <div className="text-xs text-gold font-medium mt-1">◆ Shared device (same time)</div>
+                )}
               </td>
-              <td className="px-4 py-2 whitespace-nowrap">{formatLocalDate(r.check_in_time) || r.date}</td>
-              <td className="px-4 py-2">
+              <td className="px-4 py-2.5 whitespace-nowrap">{formatLocalDate(r.check_in_time) || r.date}</td>
+              <td className="px-4 py-2.5">
                 {formatLocalTime(r.check_in_time)}
                 <br />
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-slate">
                   {r.check_in_ip || "—"} · {shortenDevice(r.check_in_device)}
                 </span>
               </td>
-              <td className="px-4 py-2">
+              <td className="px-4 py-2.5">
                 {formatLocalTime(r.check_out_time)}
                 <br />
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-slate">
                   {r.check_out_ip || "—"} · {shortenDevice(r.check_out_device)}
                 </span>
                 {r.ip_mismatch && (
-                  <div className="text-xs text-amber-600 mt-1">⚠ IP changed since check-in</div>
+                  <div className="text-xs text-gold mt-1">⚠ IP changed since check-in</div>
                 )}
               </td>
             </tr>
           ))}
           {log.length === 0 && (
             <tr>
-              <td colSpan={4} className="px-4 py-6 text-center text-gray-400">
+              <td colSpan={4} className="px-4 py-8 text-center text-slate">
                 No attendance records yet.
               </td>
             </tr>
@@ -321,13 +351,19 @@ function Dashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen px-4 py-8 max-w-5xl mx-auto bg-gray-50">
+    <div className="min-h-screen px-4 py-8 max-w-5xl mx-auto bg-paper">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-green-700">Ethiopia Reads — Admin</h1>
+        <div className="flex items-center gap-3">
+          <BrandMark size={38} />
+          <div>
+            <h1 className="font-display font-semibold text-xl text-ink leading-tight">Ethiopia Reads</h1>
+            <p className="text-xs text-slate">Admin dashboard</p>
+          </div>
+        </div>
         <div className="flex gap-2">
           <button
             onClick={adminExportCsv}
-            className="text-sm bg-white border border-gray-200 px-3 py-2 rounded-lg hover:bg-gray-100 transition"
+            className="text-sm bg-white border border-sand px-3.5 py-2 rounded-lg hover:bg-forest-light transition text-ink font-medium"
           >
             Export CSV
           </button>
@@ -336,7 +372,7 @@ function Dashboard() {
               adminLogout();
               window.location.reload();
             }}
-            className="text-sm bg-white border border-gray-200 px-3 py-2 rounded-lg hover:bg-gray-100 transition text-red-600"
+            className="text-sm bg-white border border-sand px-3.5 py-2 rounded-lg hover:bg-brick-light transition text-brick font-medium"
           >
             Log out
           </button>
@@ -358,43 +394,43 @@ function Dashboard() {
                 key={t}
                 onClick={() => setTab(t)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  tab === t ? "bg-green-600 text-white" : "bg-white text-gray-600 border border-gray-200"
+                  tab === t ? "bg-forest text-white" : "bg-white text-ink border border-sand hover:bg-forest-light"
                 }`}
               >
-                {t === "volunteers" ? "Volunteers" : "Attendance Log"}
+                {t === "volunteers" ? "Volunteers" : "Attendance log"}
               </button>
             ))}
           </div>
 
           {tab === "volunteers" && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-fit">
+            <div className="bg-white rounded-2xl shadow-sm border border-sand overflow-hidden h-fit">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-gray-500 text-left">
+                <thead className="bg-forest-light text-slate text-left">
                   <tr>
-                    <th className="px-4 py-2">ID</th>
-                    <th className="px-4 py-2">Name</th>
-                    <th className="px-4 py-2">Team</th>
-                    <th className="px-4 py-2">Certificate</th>
+                    <th className="px-4 py-2.5 font-medium">ID</th>
+                    <th className="px-4 py-2.5 font-medium">Name</th>
+                    <th className="px-4 py-2.5 font-medium">Team</th>
+                    <th className="px-4 py-2.5 font-medium">Certificate</th>
                   </tr>
                 </thead>
                 <tbody>
                   {volunteers.map((v) => (
-                    <tr key={v.volunteer_id} className="border-t border-gray-100">
-                      <td className="px-4 py-2 font-mono">{v.volunteer_id}</td>
-                      <td className="px-4 py-2">{v.full_name}</td>
-                      <td className="px-4 py-2">{v.team}</td>
-                      <td className="px-4 py-2">
+                    <tr key={v.volunteer_id} className="border-t border-sand">
+                      <td className="px-4 py-2.5 font-mono text-ink">{v.volunteer_id}</td>
+                      <td className="px-4 py-2.5 text-ink">{v.full_name}</td>
+                      <td className="px-4 py-2.5 text-slate">{v.team}</td>
+                      <td className="px-4 py-2.5">
                         {v.is_eligible_for_certificate ? (
-                          <span className="text-green-600">✓ Eligible</span>
+                          <span className="text-forest-dark font-medium">✓ Eligible</span>
                         ) : (
-                          <span className="text-gray-400">—</span>
+                          <span className="text-slate">—</span>
                         )}
                       </td>
                     </tr>
                   ))}
                   {volunteers.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-4 py-6 text-center text-gray-400">
+                      <td colSpan={4} className="px-4 py-8 text-center text-slate">
                         No volunteers registered yet.
                       </td>
                     </tr>
