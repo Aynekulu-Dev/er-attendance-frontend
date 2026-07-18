@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { recordAttendance } from "../api/client";
 import { getCurrentPosition } from "../api/useGeolocation";
 import BrandMark from "../components/BrandMark";
-import { detectInAppBrowser, isAndroid, isIOS } from "../api/inAppBrowser";
 
 function CheckIcon() {
   return (
@@ -23,63 +22,10 @@ function AlertIcon() {
   );
 }
 
-// Telegram/Facebook/Instagram/Messenger ወዘተ in-app browser ውስጥ ሆነህ ስትከፍት፣
-// navigator.geolocation ብዙ ጊዜ silently ይወድቃል (system permission popup ራሱ
-// አይመጣም)። ስለዚህ Check-in ከመሞከሩ በፊት ግልፅ ማሳሰቢያ እናሳያለን፣ "Open in Browser"
-// button ጭምር።
-function OpenInBrowserBanner({ appName }) {
-  const androidIntentUrl = `intent://${window.location.host}${window.location.pathname}#Intent;scheme=https;package=com.android.chrome;end`;
-
-  function handleOpenInBrowser() {
-    if (isAndroid()) {
-      // Chrome ን በቀጥታ በ intent:// ስንከፍት አብዛኛዎቹ Android in-app browsers ይህን ይደግፋሉ
-      window.location.href = androidIntentUrl;
-    }
-    // iOS ላይ automatic redirect የለም - WebView ራሱ አይፈቅድም። ከታች ያለውን መመሪያ ይከተል።
-  }
-
-  return (
-    <div className="bg-sand/30 border border-sand rounded-xl p-3.5 mb-5 text-sm text-ink space-y-2">
-      <p className="font-semibold text-brick">
-        {appName ? `${appName} ውስጥ ከፍተኸዋል` : "In-app browser ውስጥ ከፍተኸዋል"} - Location ላይሰራ ይችላል
-      </p>
-      <p className="text-slate">
-        Check-in/Check-out ለመስራት Location ፍቃድ ያስፈልጋል፣ ግን ይህ አይነት browser ብዙ ጊዜ
-        አይፈቅድም። እባክህ፦
-      </p>
-      <ul className="list-disc list-inside text-slate space-y-0.5">
-        {isIOS() ? (
-          <li>
-            ከላይ ቀኝ ጥግ ላይ ያለውን <span className="font-medium text-ink">⋯ (ሶስት ነጥብ)</span> ወይም{" "}
-            <span className="font-medium text-ink">↗ (share)</span> ምልክት ተጫንና{" "}
-            <span className="font-medium text-ink">"Open in Safari"</span> ምረጥ
-          </li>
-        ) : (
-          <li>
-            ከላይ ቀኝ ጥግ ላይ ያለውን <span className="font-medium text-ink">⋯ (ሶስት ነጥብ)</span> ምልክት ተጫንና{" "}
-            <span className="font-medium text-ink">"Open in Chrome"</span> ወይም{" "}
-            <span className="font-medium text-ink">"Open in browser"</span> ምረጥ
-          </li>
-        )}
-        <li>ወይም ገፁን link ኮፒ አድርገህ Chrome/Safari ራሱ ውስጥ ከፍተው</li>
-      </ul>
-      {isAndroid() && (
-        <button
-          onClick={handleOpenInBrowser}
-          className="w-full mt-1 bg-white border border-sand text-ink font-medium text-sm py-2 rounded-lg hover:bg-forest-light transition"
-        >
-          Chrome ላይ ክፈት
-        </button>
-      )}
-    </div>
-  );
-}
-
 export default function VolunteerPage() {
   const [volunteerId, setVolunteerId] = useState("");
   const [loadingAction, setLoadingAction] = useState(null); // "in" | "out" | null
   const [result, setResult] = useState(null); // { status: "success"|"error", message }
-  const [{ isInApp, appName }] = useState(() => detectInAppBrowser());
 
   async function handleAction(action) {
     if (!volunteerId.trim()) {
@@ -99,18 +45,10 @@ export default function VolunteerPage() {
       });
       setResult({ status: data.status, message: data.message });
     } catch (err) {
-      let message =
+      const message =
         err?.response?.data?.detail ||
         err?.message ||
         "ግንኙነት ላይ ችግር ተፈጥሯል። ኢንተርኔትህን አረጋግጥና እንደገና ሞክር።";
-
-      // Location permission ላይ ካልተፈቀደ እና in-app browser ውስጥ ከሆነ፣ ምክንያቱን
-      // የበለጠ ግልፅ እናድርገው - user popup ሳያይ ተከልክሎ ስለሚሆን ግራ ይጋባል።
-      const isPermissionError = /Location ፍቃድ ያስፈልጋል|PERMISSION_DENIED/i.test(message);
-      if (isPermissionError && isInApp) {
-        message = `${message} (${appName || "ይህ"} ውስጥ browser ስለሆንክ ሊሆን ይችላል - ከላይ ያለውን መመሪያ ተከተል።)`;
-      }
-
       setResult({ status: "error", message });
     } finally {
       setLoadingAction(null);
@@ -129,8 +67,6 @@ export default function VolunteerPage() {
             Volunteer attendance
           </p>
         </div>
-
-        {isInApp && <OpenInBrowserBanner appName={appName} />}
 
         <div className="bg-white rounded-2xl shadow-sm border border-sand p-7 space-y-5">
           <div>
