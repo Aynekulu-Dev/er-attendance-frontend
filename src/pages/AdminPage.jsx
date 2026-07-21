@@ -409,7 +409,7 @@ function Dashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen px-4 py-8 max-w-5xl mx-auto bg-paper">
+    <div className="min-h-screen px-4 py-8 max-w-7xl mx-auto bg-paper">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <BrandMark size={38} />
@@ -477,7 +477,7 @@ function Dashboard() {
               <table className="w-full text-sm">
                 <thead className="bg-forest-light text-slate text-left">
                   <tr>
-                    <th className="px-4 py-2.5 font-medium">ID</th>
+                    <th className="px-4 py-2.5 font-medium whitespace-nowrap">ID</th>
                     <th className="px-4 py-2.5 font-medium">Name</th>
                     <th className="px-4 py-2.5 font-medium">Phone</th>
                     <th className="px-4 py-2.5 font-medium">Team</th>
@@ -490,7 +490,7 @@ function Dashboard() {
                     const isEditing = editingId === v.volunteer_id;
                     return (
                       <tr key={v.volunteer_id} className="border-t border-sand">
-                        <td className="px-4 py-2.5 font-mono text-ink">{v.volunteer_id}</td>
+                        <td className="px-4 py-2.5 font-mono text-ink whitespace-nowrap">{v.volunteer_id}</td>
                         {isEditing ? (
                           <>
                             <td className="px-4 py-2">
