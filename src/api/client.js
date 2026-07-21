@@ -47,6 +47,12 @@ export const adminRegisterVolunteer = (payload) =>
 
 export const adminListVolunteers = () => api.get("/api/volunteers").then((r) => r.data);
 
+// NEW: admin dashboard "edit volunteer" - sends only the fields that were
+// actually changed (see AdminPage's inline edit row), backend ignores
+// anything left unset so it won't overwrite other fields with nulls.
+export const adminUpdateVolunteer = (volunteerId, updates) =>
+  api.patch(`/api/volunteers/${volunteerId}`, updates).then((r) => r.data);
+
 export const adminGetAnalytics = () => api.get("/api/admin/analytics").then((r) => r.data);
 
 // NEW: full attendance log with IP/device per check-in & check-out (anti-fraud review)

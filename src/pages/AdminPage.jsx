@@ -7,6 +7,7 @@ import {
   isAdminLoggedIn,
   adminRegisterVolunteer,
   adminListVolunteers,
+  adminUpdateVolunteer,
   adminGetAnalytics,
   adminGetAttendanceLog,
   adminExportCsv,
@@ -319,6 +320,49 @@ function Dashboard() {
   const [exportError, setExportError] = useState("");
   const [exporting, setExporting] = useState(false);
 
+  // --- NEW: inline "edit volunteer" state ---
+  // editingId: volunteer_id of the row currently in edit mode (null = none)
+  // editValues: the in-progress {full_name, phone_number, team} for that row
+  const [editingId, setEditingId] = useState(null);
+  const [editValues, setEditValues] = useState({ full_name: "", phone_number: "", team: "" });
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
+
+  function startEdit(volunteer) {
+    setEditingId(volunteer.volunteer_id);
+    setEditValues({
+      full_name: volunteer.full_name || "",
+      phone_number: volunteer.phone_number || "",
+      team: volunteer.team || "",
+    });
+    setEditError("");
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditError("");
+  }
+
+  async function saveEdit(volunteerId) {
+    setEditSaving(true);
+    setEditError("");
+    try {
+      await adminUpdateVolunteer(volunteerId, {
+        full_name: editValues.full_name,
+        phone_number: editValues.phone_number || null,
+        team: editValues.team,
+      });
+      setEditingId(null);
+      await loadAll();
+    } catch (err) {
+      setEditError(
+        err?.response?.data?.detail || "ማስተካከል አልተቻለም። ደግመህ ሞክር።"
+      );
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
   async function handleExportCsv() {
     setExportError("");
     setExporting(true);
@@ -425,33 +469,105 @@ function Dashboard() {
 
           {tab === "volunteers" && (
             <div className="bg-white rounded-2xl shadow-sm border border-sand overflow-hidden h-fit">
+              {editError && (
+                <p className="text-sm text-brick bg-brick-light border-b border-brick/30 px-4 py-2">
+                  {editError}
+                </p>
+              )}
               <table className="w-full text-sm">
                 <thead className="bg-forest-light text-slate text-left">
                   <tr>
                     <th className="px-4 py-2.5 font-medium">ID</th>
                     <th className="px-4 py-2.5 font-medium">Name</th>
+                    <th className="px-4 py-2.5 font-medium">Phone</th>
                     <th className="px-4 py-2.5 font-medium">Team</th>
                     <th className="px-4 py-2.5 font-medium">Certificate</th>
+                    <th className="px-4 py-2.5 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {volunteers.map((v) => (
-                    <tr key={v.volunteer_id} className="border-t border-sand">
-                      <td className="px-4 py-2.5 font-mono text-ink">{v.volunteer_id}</td>
-                      <td className="px-4 py-2.5 text-ink">{v.full_name}</td>
-                      <td className="px-4 py-2.5 text-slate">{v.team}</td>
-                      <td className="px-4 py-2.5">
-                        {v.is_eligible_for_certificate ? (
-                          <span className="text-forest-dark font-medium">✓ Eligible</span>
+                  {volunteers.map((v) => {
+                    const isEditing = editingId === v.volunteer_id;
+                    return (
+                      <tr key={v.volunteer_id} className="border-t border-sand">
+                        <td className="px-4 py-2.5 font-mono text-ink">{v.volunteer_id}</td>
+                        {isEditing ? (
+                          <>
+                            <td className="px-4 py-2">
+                              <input
+                                value={editValues.full_name}
+                                onChange={(e) =>
+                                  setEditValues((s) => ({ ...s, full_name: e.target.value }))
+                                }
+                                className={inputClass}
+                              />
+                            </td>
+                            <td className="px-4 py-2">
+                              <input
+                                value={editValues.phone_number}
+                                onChange={(e) =>
+                                  setEditValues((s) => ({ ...s, phone_number: e.target.value }))
+                                }
+                                className={inputClass}
+                              />
+                            </td>
+                            <td className="px-4 py-2">
+                              <input
+                                value={editValues.team}
+                                onChange={(e) =>
+                                  setEditValues((s) => ({ ...s, team: e.target.value }))
+                                }
+                                className={inputClass}
+                              />
+                            </td>
+                          </>
                         ) : (
-                          <span className="text-slate">—</span>
+                          <>
+                            <td className="px-4 py-2.5 text-ink">{v.full_name}</td>
+                            <td className="px-4 py-2.5 text-slate">{v.phone_number || "—"}</td>
+                            <td className="px-4 py-2.5 text-slate">{v.team}</td>
+                          </>
                         )}
-                      </td>
-                    </tr>
-                  ))}
+                        <td className="px-4 py-2.5">
+                          {v.is_eligible_for_certificate ? (
+                            <span className="text-forest-dark font-medium">✓ Eligible</span>
+                          ) : (
+                            <span className="text-slate">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          {isEditing ? (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => saveEdit(v.volunteer_id)}
+                                disabled={editSaving}
+                                className="text-xs bg-forest text-white px-2.5 py-1.5 rounded-md hover:bg-forest-dark transition disabled:opacity-60"
+                              >
+                                {editSaving ? "Saving…" : "Save"}
+                              </button>
+                              <button
+                                onClick={cancelEdit}
+                                disabled={editSaving}
+                                className="text-xs bg-white border border-sand px-2.5 py-1.5 rounded-md hover:bg-forest-light transition"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => startEdit(v)}
+                              className="text-xs bg-white border border-sand px-2.5 py-1.5 rounded-md hover:bg-forest-light transition text-ink font-medium"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                   {volunteers.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-4 py-8 text-center text-slate">
+                      <td colSpan={6} className="px-4 py-8 text-center text-slate">
                         No volunteers registered yet.
                       </td>
                     </tr>
