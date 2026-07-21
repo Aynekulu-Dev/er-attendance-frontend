@@ -56,14 +56,30 @@ export const adminGetAttendanceLog = () => api.get("/api/admin/attendance-log").
 // param), so a plain <a href="..."> download link can't authenticate. We
 // fetch the file as a blob (interceptor above attaches the token) and then
 // trigger the browser's save dialog manually.
+//
+// NOTE: this used to fail silently if the request errored (e.g. no data yet,
+// expired token) - clicking the button just did nothing with no feedback.
+// Now we always throw a friendly message so the caller (AdminPage) can show it.
 export const adminExportCsv = async () => {
-  const response = await api.get("/api/admin/export-csv", { responseType: "blob" });
-  const url = window.URL.createObjectURL(new Blob([response.data]));
-  const link = document.createElement("a");
-  link.href = url;
-  link.setAttribute("download", "attendance.csv");
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(url);
+  try {
+    const response = await api.get("/api/admin/export-csv", { responseType: "blob" });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "attendance.csv");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    if (err?.response?.status === 404) {
+      throw new Error("እስካሁን የተመዘገበ የመገኘት (attendance) ዳታ የለም።");
+    }
+    if (err?.response?.status === 401) {
+      throw new Error("የ admin session ጊዜው አልቋል። እባክህ እንደገና ግባ (log in)።");
+    }
+    // err.response.data is a Blob here (responseType: "blob"), so we can't
+    // read err.response.data.detail directly - fall back to a generic message.
+    throw new Error("CSV ማውጣት አልተሳካም። ደግመህ ሞክር፣ ችግር ከቀጠለ ገፁን አድስ (refresh)።");
+  }
 };

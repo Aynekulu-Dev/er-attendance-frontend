@@ -316,6 +316,20 @@ function Dashboard() {
   const [analytics, setAnalytics] = useState(null);
   const [attendanceLog, setAttendanceLog] = useState([]);
   const [tab, setTab] = useState("volunteers"); // "volunteers" | "log"
+  const [exportError, setExportError] = useState("");
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExportCsv() {
+    setExportError("");
+    setExporting(true);
+    try {
+      await adminExportCsv();
+    } catch (err) {
+      setExportError(err?.message || "CSV ማውጣት አልተሳካም። ደግመህ ሞክር።");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   async function loadAll() {
     // Promise.allSettled ን እንጠቀማለን (Promise.all ሳይሆን) - ስለዚህ ከ3ቱ
@@ -362,10 +376,11 @@ function Dashboard() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={adminExportCsv}
-            className="text-sm bg-white border border-sand px-3.5 py-2 rounded-lg hover:bg-forest-light transition text-ink font-medium"
+            onClick={handleExportCsv}
+            disabled={exporting}
+            className="text-sm bg-white border border-sand px-3.5 py-2 rounded-lg hover:bg-forest-light transition text-ink font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Export CSV
+            {exporting ? "በማውጣት ላይ…" : "Export CSV"}
           </button>
           <button
             onClick={() => {
@@ -378,6 +393,12 @@ function Dashboard() {
           </button>
         </div>
       </div>
+
+      {exportError && (
+        <div className="mb-6 -mt-3 text-sm text-brick bg-brick-light border border-brick/30 rounded-lg px-3.5 py-2">
+          {exportError}
+        </div>
+      )}
 
       <AnalyticsBar analytics={analytics} />
 
