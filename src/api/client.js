@@ -53,6 +53,12 @@ export const adminListVolunteers = () => api.get("/api/volunteers").then((r) => 
 export const adminUpdateVolunteer = (volunteerId, updates) =>
   api.patch(`/api/volunteers/${volunteerId}`, updates).then((r) => r.data);
 
+// NEW: admin dashboard "delete volunteer" - irreversible, also wipes that
+// volunteer's attendance history (backend cascade). AdminPage confirms with
+// the admin (window.confirm) before ever calling this.
+export const adminDeleteVolunteer = (volunteerId) =>
+  api.delete(`/api/volunteers/${volunteerId}`);
+
 export const adminGetAnalytics = () => api.get("/api/admin/analytics").then((r) => r.data);
 
 // NEW: full attendance log with IP/device per check-in & check-out (anti-fraud review)

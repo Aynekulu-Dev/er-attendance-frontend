@@ -8,6 +8,7 @@ import {
   adminRegisterVolunteer,
   adminListVolunteers,
   adminUpdateVolunteer,
+  adminDeleteVolunteer,
   adminGetAnalytics,
   adminGetAttendanceLog,
   adminExportCsv,
@@ -328,6 +329,34 @@ function Dashboard() {
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
 
+  // --- NEW: "delete volunteer" state ---
+  // deletingId: which volunteer_id is currently mid-delete (shows a spinner
+  // on that row's button and disables it, so a double-click can't fire two
+  // DELETE requests).
+  const [deletingId, setDeletingId] = useState(null);
+  const [deleteError, setDeleteError] = useState("");
+
+  async function handleDelete(volunteer) {
+    const sure = window.confirm(
+      `Delete ${volunteer.full_name} (${volunteer.volunteer_id})?\n\n` +
+        "This permanently removes them AND their entire attendance history. This cannot be undone."
+    );
+    if (!sure) return;
+
+    setDeleteError("");
+    setDeletingId(volunteer.volunteer_id);
+    try {
+      await adminDeleteVolunteer(volunteer.volunteer_id);
+      await loadAll();
+    } catch (err) {
+      setDeleteError(
+        err?.response?.data?.detail || `Couldn't delete ${volunteer.full_name}. Please try again.`
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   function startEdit(volunteer) {
     setEditingId(volunteer.volunteer_id);
     setEditValues({
@@ -474,6 +503,11 @@ function Dashboard() {
                   {editError}
                 </p>
               )}
+              {deleteError && (
+                <p className="text-sm text-brick bg-brick-light border-b border-brick/30 px-4 py-2">
+                  {deleteError}
+                </p>
+              )}
               <table className="w-full text-sm">
                 <thead className="bg-forest-light text-slate text-left">
                   <tr>
@@ -554,12 +588,22 @@ function Dashboard() {
                               </button>
                             </div>
                           ) : (
-                            <button
-                              onClick={() => startEdit(v)}
-                              className="text-xs bg-white border border-sand px-2.5 py-1.5 rounded-md hover:bg-forest-light transition text-ink font-medium"
-                            >
-                              Edit
-                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => startEdit(v)}
+                                disabled={deletingId === v.volunteer_id}
+                                className="text-xs bg-white border border-sand px-2.5 py-1.5 rounded-md hover:bg-forest-light transition text-ink font-medium disabled:opacity-50"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(v)}
+                                disabled={deletingId === v.volunteer_id}
+                                className="text-xs bg-white border border-brick/40 text-brick px-2.5 py-1.5 rounded-md hover:bg-brick-light transition font-medium disabled:opacity-50"
+                              >
+                                {deletingId === v.volunteer_id ? "Deleting…" : "Delete"}
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>
